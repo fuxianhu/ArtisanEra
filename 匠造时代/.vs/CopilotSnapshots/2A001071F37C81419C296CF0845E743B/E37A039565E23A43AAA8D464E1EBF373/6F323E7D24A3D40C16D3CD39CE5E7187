@@ -1,0 +1,59 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class WorldGeneration : MonoBehaviour
+{
+    // 可调参数
+    public int width = 128;
+    public int height = 128;
+    public int octaves = 4;
+    public float lacunarity = 2.0f;
+    public float gain = 0.5f;
+    public float scale = 0.05f;
+    public GameObject pointPrefab; // 用于可视化的预制体（如Sphere/Cube）
+
+    void Start()
+    {
+        FastNoiseLite noise = new FastNoiseLite();
+        noise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
+
+        float[,] noiseData = new float[width, height];
+
+        for (int x = 0; x < width; x++)
+        {
+            for (int y = 0; y < height; y++)
+            {
+                float amplitude = 1f;
+                float frequency = 1f;
+                float value = 0f;
+                float max = 0f;
+                // 分形噪声叠加
+                for (int o = 0; o < octaves; o++)
+                {
+                    float nx = x * scale * frequency;
+                    float ny = y * scale * frequency;
+                    value += noise.GetNoise(nx, ny) * amplitude;
+                    max += amplitude;
+                    amplitude *= gain;
+                    frequency *= lacunarity;
+                }
+                value /= max; // 归一化
+                noiseData[x, y] = value;
+
+                // 可视化：在场景中生成点，高度由噪声值决定
+                if (pointPrefab != null)
+                {
+                    Vector3 pos = new Vector3(x, value * 10f, y); // 10f为高度缩放
+                    Instantiate(pointPrefab, pos, Quaternion.identity);
+                }
+            }
+        }
+    }
+
+
+    void Update()
+    {
+
+    }
+}

@@ -1,0 +1,53 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class PlayerMovement : MonoBehaviour
+{
+    public GameObject player; // 需要有Rigidbody组件
+    public float moveForce = 30f; // 移动推力
+    public float jumpForce = 10f; // 跳跃推力
+    public float drag = 2f; // 阻力，控制松开按键后的减速
+
+    private Rigidbody rb;
+    private Vector3 inputDir;
+    private bool jumpPressed;
+
+    void Start()
+    {
+        rb = player.GetComponent<Rigidbody>();
+        rb.drag = drag; // 设置阻力
+    }
+
+    void Update()
+    {
+        // 记录输入方向
+        inputDir = Vector3.zero;
+        if (Input.GetKey(KeyCode.W)) inputDir += Vector3.forward;
+        if (Input.GetKey(KeyCode.S)) inputDir += Vector3.back;
+        if (Input.GetKey(KeyCode.A)) inputDir += Vector3.left;
+        if (Input.GetKey(KeyCode.D)) inputDir += Vector3.right;
+        inputDir = inputDir.normalized;
+
+        // 跳跃
+        if (Input.GetKeyDown(KeyCode.Space))
+            jumpPressed = true;
+    }
+
+    void FixedUpdate()
+    {
+        // 只在有输入时施加力，松开时靠阻力减速
+        if (inputDir != Vector3.zero)
+        {
+            Vector3 worldDir = player.transform.TransformDirection(inputDir);
+            rb.AddForce(worldDir * moveForce, ForceMode.Acceleration);
+        }
+
+        // 跳跃（简单实现，建议加地面检测）
+        if (jumpPressed)
+        {
+            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            jumpPressed = false;
+        }
+    }
+}

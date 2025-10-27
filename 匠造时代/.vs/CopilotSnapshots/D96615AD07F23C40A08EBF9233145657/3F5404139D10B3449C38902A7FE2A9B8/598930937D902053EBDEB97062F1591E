@@ -1,0 +1,87 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class PlayerMovement : MonoBehaviour
+{
+    public GameObject player; // 需要有Rigidbody组件
+    public float moveForce =30f; // 移动推力
+    public float jumpForce =10f; // 跳跃推力
+    public float drag =2f; // 阻力，控制松开按键后的减速
+    public Camera playerCamera; // 摄像机引用
+    public float mouseSensitivity =2f; // 鼠标灵敏度
+    public float cameraPitchMin = -80f; // 摄像机俯仰最小角度
+    public float cameraPitchMax =80f; // 摄像机俯仰最大角度
+
+    private Rigidbody rb;
+    private Vector3 inputDir;
+    private bool jumpPressed;
+    private float cameraPitch =0f;
+
+    void Start()
+    {
+        rb = player.GetComponent<Rigidbody>();
+        rb.drag = drag; // 设置阻力
+        if (playerCamera == null)
+        {
+            playerCamera = Camera.main;
+        }
+        // 锁定鼠标
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+    }
+
+    void Update()
+    {
+        // 记录输入方向
+        inputDir = Vector3.zero;
+        if (Input.GetKey(KeyCode.W)) inputDir += Vector3.forward;
+        if (Input.GetKey(KeyCode.S)) inputDir += Vector3.back;
+        if (Input.GetKey(KeyCode.A)) inputDir += Vector3.left;
+        if (Input.GetKey(KeyCode.D)) inputDir += Vector3.right;
+        inputDir = inputDir.normalized;
+
+        // 跳跃
+        if (Input.GetKeyDown(KeyCode.Space))
+            jumpPressed = true;
+
+        // 全屏/取消全屏切换（支持任意Ctrl+任意Alt+主键盘或小键盘Enter）
+        bool ctrl = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+        bool alt = Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt);
+        bool enter = Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter);
+        if (ctrl && alt && enter)
+        {
+            Screen.fullScreen = !Screen.fullScreen;
+        }
+
+        // 鼠标控制旋转
+        float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
+        float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
+        // 玩家左右旋转
+        player.transform.Rotate(Vector3.up * mouseX);
+        // 摄像机上下旋转
+        cameraPitch -= mouseY;
+        cameraPitch = Mathf.Clamp(cameraPitch, cameraPitchMin, cameraPitchMax);
+        if (playerCamera != null)
+        {
+            playerCamera.transform.localEulerAngles = new Vector3(cameraPitch,0f,0f);
+        }
+    }
+
+    void FixedUpdate()
+    {
+        // 只在有输入时施加力，松开时靠阻力减速
+        if (inputDir != Vector3.zero)
+        {
+            Vector3 worldDir = player.transform.TransformDirection(inputDir);
+            rb.AddForce(worldDir * moveForce, ForceMode.Acceleration);
+        }
+
+        // 跳跃（简单实现，建议加地面检测）
+        if (jumpPressed)
+        {
+            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            jumpPressed = false;
+        }
+    }
+}

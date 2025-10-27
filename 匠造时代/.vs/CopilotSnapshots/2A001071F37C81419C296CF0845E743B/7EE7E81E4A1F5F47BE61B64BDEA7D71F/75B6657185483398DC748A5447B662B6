@@ -1,0 +1,81 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class PlayerMovement : MonoBehaviour
+{
+    public GameObject player; // 需要有Rigidbody组件
+    public float moveForce = 30f; // 移动推力
+    public float jumpForce = 10f; // 跳跃推力
+    public float drag = 2f; // 阻力，控制松开按键后的减速
+    public float stepHeight = 0.2f; // 最大可自动爬升高度
+    public float stepCheckDistance = 0.6f; // 检测台阶的距离
+
+    private Rigidbody rb;
+    private Vector3 inputDir;
+    private bool jumpPressed;
+
+    void Start()
+    {
+        rb = player.GetComponent<Rigidbody>();
+        rb.drag = drag; // 设置阻力
+    }
+
+    void Update()
+    {
+        // 记录输入方向
+        inputDir = Vector3.zero;
+        if (Input.GetKey(KeyCode.W)) inputDir += Vector3.forward;
+        if (Input.GetKey(KeyCode.S)) inputDir += Vector3.back;
+        if (Input.GetKey(KeyCode.A)) inputDir += Vector3.left;
+        if (Input.GetKey(KeyCode.D)) inputDir += Vector3.right;
+        inputDir = inputDir.normalized;
+
+        // 跳跃
+        if (Input.GetKeyDown(KeyCode.Space))
+            jumpPressed = true;
+    }
+
+    void FixedUpdate()
+    {
+        if (inputDir != Vector3.zero)
+        {
+            Vector3 worldDir = player.transform.TransformDirection(inputDir);
+            // 检查前方是否有台阶
+            if (CanStep(worldDir))
+            {
+                // 平滑上台阶
+                rb.MovePosition(rb.position + new Vector3(0, stepHeight, 0));
+            }
+            rb.AddForce(worldDir * moveForce, ForceMode.Acceleration);
+        }
+
+        // 跳跃（简单实现，建议加地面检测）
+        if (jumpPressed)
+        {
+            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            jumpPressed = false;
+        }
+    }
+
+    // 检查前方是否有可爬的台阶
+    bool CanStep(Vector3 moveDir)
+    {
+        RaycastHit hitLow, hitHigh;
+        Vector3 origin = player.transform.position + Vector3.up * 0.05f; // 低射线起点
+        Vector3 highOrigin = player.transform.position + Vector3.up * (stepHeight + 0.05f); // 高射线起点
+        float radius = 0.25f; // 适合Box/Capsule Collider的半径
+        // 低射线检测前方障碍
+        bool lowBlocked = Physics.SphereCast(origin, radius, moveDir, out hitLow, stepCheckDistance);
+        // 高射线检测上方空间
+        bool highBlocked = Physics.SphereCast(highOrigin, radius, moveDir, out hitHigh, stepCheckDistance);
+        if (lowBlocked && !highBlocked)
+        {
+            // 只要障碍高度差在stepHeight内即可
+            float obstacleHeight = hitLow.point.y - player.transform.position.y;
+            if (obstacleHeight > 0.01f && obstacleHeight <= stepHeight + 0.01f)
+                return true;
+        }
+        return false;
+    }
+}

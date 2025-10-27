@@ -1,0 +1,104 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+[RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
+public class WorldGeneration : MonoBehaviour
+{
+    public int width = 256; // 地形网格宽度
+    public int height = 256; // 地形网格高度
+    public int octaves = 8; // 分形噪声的叠加层数
+    public float lacunarity = 2.0f; // 每层噪声频率的增长倍数
+    public float gain = 0.5f; // 每层噪声振幅的衰减倍数
+    public float scale = 2.0f; // 噪声采样缩放（越小越细腻）
+    public float heightScale = 10f; // 地形高度缩放
+
+    void Generation()
+    {
+        // 创建噪声生成器
+        FastNoiseLite noise = new FastNoiseLite();
+        noise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
+
+        // 顶点、UV和三角形索引数组
+        Vector3[] vertices = new Vector3[width * height];
+        Vector2[] uvs = new Vector2[width * height];
+        int[] triangles = new int[(width - 1) * (height - 1) * 6];
+
+        //生成顶点和UV坐标
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                float amplitude = 1f;
+                float frequency = 1f;
+                float value = 0f;
+                float max = 0f;
+                // 分形噪声叠加
+                for (int o = 0; o < octaves; o++)
+                {
+                    float nx = x * scale * frequency;
+                    float ny = y * scale * frequency;
+                    value += noise.GetNoise(nx, ny) * amplitude;
+                    max += amplitude;
+                    amplitude *= gain;
+                    frequency *= lacunarity;
+                }
+                value /= max; // 归一化噪声值
+                int idx = y * width + x;
+                vertices[idx] = new Vector3(x, value * heightScale, y); // 设置顶点坐标
+                uvs[idx] = new Vector2((float)x / (width - 1), (float)y / (height - 1)); // 设置UV
+            }
+        }
+
+        //生成三角形索引（每个格子两个三角形）
+        int tri = 0;
+        for (int y = 0; y < height - 1; y++)
+        {
+            for (int x = 0; x < width - 1; x++)
+            {
+                int idx = y * width + x;
+                // 顺时针两个三角形
+                triangles[tri++] = idx;
+                triangles[tri++] = idx + width;
+                triangles[tri++] = idx + 1;
+
+                triangles[tri++] = idx + 1;
+                triangles[tri++] = idx + width;
+                triangles[tri++] = idx + width + 1;
+            }
+        }
+
+        // 创建Mesh并赋值
+        Mesh mesh = new Mesh();
+        mesh.indexFormat = (width * height > 65000) ? UnityEngine.Rendering.IndexFormat.UInt32 : mesh.indexFormat;
+        mesh.vertices = vertices;
+        mesh.triangles = triangles;
+        mesh.uv = uvs;
+        mesh.RecalculateNormals();
+        mesh.RecalculateTangents();
+
+        // 赋值给MeshFilter
+        MeshFilter mf = GetComponent<MeshFilter>();
+        mf.mesh = mesh;
+
+        // 赋值给MeshCollider，实现地形碰撞
+        MeshCollider mc = GetComponent<MeshCollider>();
+        if (mc == null)
+            mc = gameObject.AddComponent<MeshCollider>();
+        mc.sharedMesh = null;
+        mc.sharedMesh = mesh;
+
+        // 自动赋予Standard材质（如未设置材质）
+        var mr = GetComponent<MeshRenderer>();
+        if (mr.sharedMaterial == null)
+        {
+            mr.material = new Material(Shader.Find("Standard"));
+            mr.material.color = Color.green;
+        }
+    }
+
+    void Start()
+    {
+        Generation();
+    }
+}

@@ -1,0 +1,188 @@
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
+using UnityEngine.Windows;
+
+
+
+public class TerrainSettings
+{
+    public int width = 512; // 地形网格宽度
+    public int height = 512; // 地形网格高度
+    public int octaves = 8; // 分形噪声的叠加层数
+    public float lacunarity = 2.5f; // 每层噪声频率的增长倍数
+    public float gain = 0.4f; // 每层噪声振幅的衰减倍数
+    public float scale = 0.05f; // 噪声采样缩放（越小越细腻）
+    public float heightScale = 200f; // 地形高度缩放
+    public float amplitude = 0.1f; // 振幅
+    public float frequency = 0.3f; // 频率
+
+    public TerrainSettings(int width,
+        int height,
+        int octaves,
+        float lacunarity,
+        float gain,
+        float scale,
+        float heightScale,
+        float amplitude,
+        float frequency)
+    {
+        this.width = width;
+        this.height = height;
+        this.octaves = octaves;
+        this.lacunarity = lacunarity;
+        this.gain = gain;
+        this.scale = scale;
+        this.heightScale = heightScale;
+        this.amplitude = amplitude;
+        this.frequency = frequency;
+    }
+}
+
+
+
+[RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
+public class WorldGeneration : MonoBehaviour
+{
+    public GameObject player; // 玩家对象
+    public int viewDistance = 4; // 视距（以区块为单位）
+    static public int chunkSize = 32; // 区块大小(x*x)
+    public int seed; // 世界生成器的种子
+
+    static public Dictionary<string, TerrainSettings> sList = new(){ // （静态）
+        { "plain", new(512, 512, 8, 2.5f, 0.4f, 1.0f, 50f, 0.01f, 0.1f) }, // 平原
+        { "mountain_range", new(512, 512, 8, 2.5f, 0.4f, 1.0f, 200f, 0.01f, 0.1f) }, // 山脉
+        { "hillside", new(512, 512, 8, 2.5f, 0.4f, 0.05f, 200f, 1f, 1f) } // 山坡
+    };
+
+
+    public TerrainSettings s = sList["mountain_range"]; // 山脉
+
+    private List<Vector2> loadedChucks = new List<Vector2>(); // 已加载的区块
+
+    private void Update()
+    {
+        int centerX = (int)(player.transform.position.x / chunkSize);
+        int centerZ = (int)(player.transform.position.z / chunkSize);
+        int rsq = viewDistance; // 视距的平方
+
+        for (int dx = -viewDistance; dx <= viewDistance; dx++)
+        {
+            for (int dz = -viewDistance; dz <= viewDistance; dz++)
+            {
+                if (dx * dx + dz * dz <= rsq)
+                {
+                    int chunkX = centerX + dx;
+                    int chunkZ = centerZ + dz;
+                    // 在这里处理(chunkX, chunkZ)区块
+                    Debug.Log($"{chunkX}, {chunkZ}");
+                    if (!loadedChucks.Contains(new Vector2(chunkX, chunkZ)))
+                    {
+                        loadedChucks.Add(new Vector2(chunkX, chunkZ));
+                        Generation(chunkX * chunkSize, chunkZ * chunkSize);
+                    }
+                }
+            }
+        }
+    }
+
+
+    // 修正Generation方法中的顶点和三角形索引越界问题
+    void Generation(int vx, int vy)
+    {
+        // 创建区块GameObject
+        GameObject chunkObj = new GameObject($"Chunk_{vx}_{vy}");
+        chunkObj.transform.parent = this.transform;
+        chunkObj.transform.position = new Vector3(vx,0, vy);
+
+        // 添加组件
+        MeshFilter mf = chunkObj.AddComponent<MeshFilter>();
+        MeshRenderer mr = chunkObj.AddComponent<MeshRenderer>();
+        MeshCollider mc = chunkObj.AddComponent<MeshCollider>();
+
+        // 创建噪声生成器
+        FastNoiseLite noise = new(seed);
+        noise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
+
+        int vertCount = (chunkSize +1) * (chunkSize +1);
+        Vector3[] vertices = new Vector3[vertCount];
+        Vector2[] uvs = new Vector2[vertCount];
+        int[] triangles = new int[chunkSize * chunkSize *6];
+
+        // 顶点和UV
+        for (int y =0; y <= chunkSize; y++)
+        {
+            for (int x =0; x <= chunkSize; x++)
+            {
+                float amplitude = s.amplitude;
+                float frequency = s.frequency;
+                float value =0f;
+                float max =0f;
+                for (int o =0; o < s.octaves; o++)
+                {
+                    float nx = (vx + x) * s.scale * frequency;
+                    float ny = (vy + y) * s.scale * frequency;
+                    value += noise.GetNoise(nx, ny) * amplitude;
+                    max += amplitude;
+                    amplitude *= s.gain;
+                    frequency *= s.lacunarity;
+                }
+                value /= max;
+                int idx = y * (chunkSize +1) + x;
+                vertices[idx] = new Vector3(x, value * s.heightScale, y); // 注意:以区块内坐标为局部坐标
+                uvs[idx] = new Vector2((float)x / chunkSize, (float)y / chunkSize);
+            }
+        }
+
+        // 三角形
+        int tri =0;
+        for (int y =0; y < chunkSize; y++)
+        {
+            for (int x =0; x < chunkSize; x++)
+            {
+                int idx = y * (chunkSize +1) + x;
+                triangles[tri++] = idx;
+                triangles[tri++] = idx + chunkSize +1;
+                triangles[tri++] = idx +1;
+
+                triangles[tri++] = idx +1;
+                triangles[tri++] = idx + chunkSize +1;
+                triangles[tri++] = idx + chunkSize +2;
+            }
+        }
+
+        Mesh mesh = new();
+        mesh.indexFormat = (vertCount >65000) ? UnityEngine.Rendering.IndexFormat.UInt32 : mesh.indexFormat;
+        mesh.vertices = vertices;
+        mesh.triangles = triangles;
+        mesh.uv = uvs;
+        mesh.RecalculateNormals();
+        mesh.RecalculateTangents();
+
+        mf.mesh = mesh;
+        mc.sharedMesh = null;
+        mc.sharedMesh = mesh;
+
+        if (mr.sharedMaterial == null)
+        {
+            mr.material = new Material(Shader.Find("Standard"))
+            {
+                color = Color.green
+            };
+        }
+    }
+
+    void Start()
+    {
+        if (player == null)
+        {
+            throw new ArgumentNullException("在 WorldGeneration 中未指定玩家对象！");
+        }
+
+        // 获取 Int 范围内随机种子
+        System.Random random = new();
+        seed = random.Next(2) == 0 ? random.Next(int.MinValue, 0) : random.Next(0, int.MaxValue);
+    }
+}

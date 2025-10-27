@@ -1,0 +1,66 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+
+public class RenderModeManager : MonoBehaviour
+{
+    public static RenderModeManager instance; // 单例模式
+
+    public Camera mainCamera; // 主相机（用于渲染3D场景）
+    public Camera uiCamera;   // UI专用相机
+
+
+    private void Awake()
+    {
+        if (instance == null)
+        {
+            instance = this;
+            DontDestroyOnLoad(gameObject); // 保持单例在场景切换时不被销毁
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
+
+
+    public void ShowUIOnly()
+    {
+        // 调用此方法切换到只显示UI
+
+        // 禁用主相机对默认层的渲染（假设3D物体在Default层）
+        mainCamera.cullingMask = 0; // 0表示不渲染任何层
+        // 或者明确指定只渲染UI层：mainCamera.cullingMask = 1 << LayerMask.NameToLayer("UI");
+
+        // 确保UI相机启用并设置合适的Depth
+        uiCamera.gameObject.SetActive(true);
+        uiCamera.depth = mainCamera.depth + 1; // 确保UI相机后渲染
+
+        // 可选：禁用所有3D对象的渲染组件（更彻底）
+        // MeshRenderer[] allRenderers = FindObjectsOfType<MeshRenderer>();
+        // foreach (MeshRenderer renderer in allRenderers)
+        // {
+        //     renderer.enabled = false;
+        // }
+    }
+
+    
+    public void Show3DScene()
+    {
+        // 调用此方法恢复3D渲染
+
+        // 恢复主相机的渲染图层（例如渲染Default层和UI层）
+        mainCamera.cullingMask = (1 << LayerMask.NameToLayer("Default")) | (1 << LayerMask.NameToLayer("UI"));
+        // 如果需要，可以调整UI相机的Depth或禁用UI相机
+        uiCamera.depth = mainCamera.depth - 1;
+        // 或者 uiCamera.gameObject.SetActive(false); // 如果不需要独立的UI相机
+
+        // 启用所有3D对象的渲染组件
+        // MeshRenderer[] allRenderers = FindObjectsOfType<MeshRenderer>();
+        // foreach (MeshRenderer renderer in allRenderers)
+        // {
+        //     renderer.enabled = true;
+        // }
+    }
+}

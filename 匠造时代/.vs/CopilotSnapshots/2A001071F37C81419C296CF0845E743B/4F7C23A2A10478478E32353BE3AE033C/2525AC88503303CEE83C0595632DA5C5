@@ -1,0 +1,41 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class PlayerMovement : MonoBehaviour
+{
+    public GameObject player;
+
+    void Start()
+    {
+        
+    }
+
+    void Update()
+    {
+        if (Input.GetKey(KeyCode.W))
+        {
+            
+        }
+        else if (Input.GetKey(KeyCode.S))
+        {
+
+        }
+        else if (Input.GetKey(KeyCode.A))
+        {
+
+        }
+        else if (Input.GetKey(KeyCode.D))
+        {
+
+        }
+        else if (Input.GetKey(KeyCode.Space))
+        {
+
+        }
+        else if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
+        {
+
+        }
+    }
+}

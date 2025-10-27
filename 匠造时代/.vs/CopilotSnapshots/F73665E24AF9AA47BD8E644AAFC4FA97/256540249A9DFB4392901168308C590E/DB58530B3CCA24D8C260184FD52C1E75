@@ -1,0 +1,97 @@
+﻿using UnityEngine;
+using UnityEngine.UI;
+
+public class UGUICreator : MonoBehaviour
+{
+    public Canvas targetCanvas;
+    public Font fontToUse;
+    public Sprite buttonRoundedSprite; // 圆角Sprite，需在Inspector赋值
+    public Vector2 buttonPosition = new Vector2(0, -150); // 可自定义按钮坐标
+
+    void Start()
+    {
+        CreateCustomText();
+        CreateCustomButton();
+    }
+
+    void CreateCustomText()
+    {
+        GameObject textGO = new GameObject("GameTitle");
+        RectTransform rectTransform = textGO.AddComponent<RectTransform>();
+        Text textComponent = textGO.AddComponent<Text>();
+        textGO.transform.SetParent(targetCanvas.transform);
+        rectTransform.localScale = Vector3.one;
+        // 设置锚点为顶部居中
+        rectTransform.anchorMin = new Vector2(0.5f, 1f);
+        rectTransform.anchorMax = new Vector2(0.5f, 1f);
+        rectTransform.pivot = new Vector2(0.5f, 1f);
+        rectTransform.anchoredPosition = new Vector2(0, -30); // 距离顶部30像素
+        rectTransform.sizeDelta = new Vector2(300, 200); // 设置宽高
+        textComponent.text = "匠造时代\nArtisanEra";
+        textComponent.fontSize = 70;
+        textComponent.alignment = TextAnchor.UpperCenter;
+        if (fontToUse != null)
+        {
+            textComponent.font = fontToUse; // 设置字体
+        }
+        textComponent.color = Color.black;   // 设置字体颜色
+        textComponent.fontStyle = FontStyle.Bold; // 设置为粗体
+    }
+
+    void CreateCustomButton()
+    {
+        GameObject buttonGO = new GameObject("StartGameButton");
+        RectTransform buttonRect = buttonGO.AddComponent<RectTransform>();
+        buttonGO.transform.SetParent(targetCanvas.transform);
+        buttonRect.localScale = Vector3.one;
+        // 设置锚点为中心
+        buttonRect.anchorMin = new Vector2(0.5f, 0.5f);
+        buttonRect.anchorMax = new Vector2(0.5f, 0.5f);
+        buttonRect.pivot = new Vector2(0.5f, 0.5f);
+        buttonRect.anchoredPosition = buttonPosition; // 使用自定义坐标
+        buttonRect.sizeDelta = new Vector2(160, 50);
+
+        // 添加Image组件 (用于显示按钮背景)
+        Image buttonImage = buttonGO.AddComponent<Image>();
+        if (buttonRoundedSprite != null)
+        {
+            buttonImage.sprite = buttonRoundedSprite;
+            buttonImage.type = Image.Type.Sliced; // 支持九宫格拉伸
+        }
+        buttonImage.color = Color.black;
+
+        // 添加Button组件
+        Button buttonComponent = buttonGO.AddComponent<Button>();
+
+        // 创建子Object作为按钮文本
+        GameObject textGO = new GameObject("Text");
+        RectTransform textRect = textGO.AddComponent<RectTransform>();
+        textGO.transform.SetParent(buttonGO.transform);
+        textRect.localScale = Vector3.one;
+        textRect.anchorMin = Vector2.zero;
+        textRect.anchorMax = Vector2.one;
+        textRect.pivot = new Vector2(0.5f, 0.5f);
+        textRect.anchoredPosition = Vector2.zero;
+        textRect.sizeDelta = Vector2.zero;
+
+        // 为子Object添加Text组件并设置
+        Text textComponent = textGO.AddComponent<Text>();
+        textComponent.text = "开始游戏";
+        textComponent.fontSize = 27;
+        textComponent.alignment = TextAnchor.MiddleCenter;
+        textComponent.color = Color.white;
+        if (fontToUse != null)
+        {
+            textComponent.font = fontToUse;
+            textComponent.fontStyle = FontStyle.Bold;
+        }
+        buttonComponent.targetGraphic = buttonImage;
+        buttonComponent.onClick.AddListener(OnButtonClicked);
+    }
+
+    void OnButtonClicked()
+    {
+        Debug.Log("动态创建的按钮被点击了！");
+        // 这里可以添加点击后的逻辑
+    }
+}

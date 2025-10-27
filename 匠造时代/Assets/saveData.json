@@ -1,0 +1,45 @@
+{
+  "Name": "<存档名称>",
+  "Introduction": "<简要介绍，都不允许换行>",
+  "Description": "<详细描述，只有这个允许换行>",
+  "Icon": "<图标>",
+  "Images": [],
+  "LastOpenedTime": 1757812798, // 单位：秒
+  "LastClosedTime": 1757812800,
+  "CreateTime": 1757812798,
+  "CreateVersion": "v.0.0.1.20250914_Alpha",
+  "SaveVersion": "v.0.0.1.20250914_Beta",
+  "Color": "#0000FF", // 存档选中时背景颜色（透明度在游戏选项中统一配置，默认50%）、图标的边框颜色（不透明）、其他不方便显示图标的地方显示
+  "EnableWhitelist": false,
+  "Whitelist": [],
+  "BannedList": [],
+  "Cheat": true, // 作弊
+  "MutedList": [], // 禁言列表
+  // "MutedList": [
+  //  ["Player114", ]
+  // 
+  // 
+  // 
+  // ],
+  "Creator": {
+    "UUID": "<创建者的UUID>",
+    "Name": "创建者昵称"
+  },
+  "PlayerData": [
+    {
+      "UUID": "<此玩家的UUID>",
+      "Name": "<昵称>",
+      "Skin": "Default",
+      "Position": [ 0, 0, 0 ],
+      "Bag": [
+        [ "<特殊格，比如装备、主副手等>" ],
+        [ "<实际背包内容>" ]
+      ],
+      "Level": 0,
+      "Star": 0,
+      "LastOnlineTime": 1757812798,
+      "TotalOnlineTime": 2,
+      "Status": 1 // 表示 Walking ， 在代码中做一个 映射表（数组）
+    }
+  ]
+}

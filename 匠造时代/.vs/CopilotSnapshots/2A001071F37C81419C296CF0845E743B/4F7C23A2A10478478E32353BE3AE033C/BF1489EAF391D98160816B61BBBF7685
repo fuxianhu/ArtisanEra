@@ -1,0 +1,90 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+[RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
+public class WorldGeneration : MonoBehaviour
+{
+    // 可调参数
+    public int width = 128;
+    public int height = 128;
+    public int octaves = 4;
+    public float lacunarity = 2.0f;
+    public float gain = 0.5f;
+    public float scale = 0.5f;
+    public float heightScale = 10f;
+
+    void Start()
+    {
+        FastNoiseLite noise = new FastNoiseLite();
+        noise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
+
+        Vector3[] vertices = new Vector3[width * height];
+        Vector2[] uvs = new Vector2[width * height];
+        int[] triangles = new int[(width - 1) * (height - 1) * 6];
+
+        //生成顶点和UV
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                float amplitude = 1f;
+                float frequency = 1f;
+                float value = 0f;
+                float max = 0f;
+                for (int o = 0; o < octaves; o++)
+                {
+                    float nx = x * scale * frequency;
+                    float ny = y * scale * frequency;
+                    value += noise.GetNoise(nx, ny) * amplitude;
+                    max += amplitude;
+                    amplitude *= gain;
+                    frequency *= lacunarity;
+                }
+                value /= max;
+                int idx = y * width + x;
+                vertices[idx] = new Vector3(x, value * heightScale, y);
+                uvs[idx] = new Vector2((float)x / (width - 1), (float)y / (height - 1));
+            }
+        }
+
+        //生成三角形索引
+        int tri = 0;
+        for (int y = 0; y < height - 1; y++)
+        {
+            for (int x = 0; x < width - 1; x++)
+            {
+                int idx = y * width + x;
+                // 顺时针两个三角形
+                triangles[tri++] = idx;
+                triangles[tri++] = idx + width;
+                triangles[tri++] = idx + 1;
+
+                triangles[tri++] = idx + 1;
+                triangles[tri++] = idx + width;
+                triangles[tri++] = idx + width + 1;
+            }
+        }
+
+        Mesh mesh = new Mesh();
+        mesh.indexFormat = (width * height > 65000) ? UnityEngine.Rendering.IndexFormat.UInt32 : mesh.indexFormat;
+        mesh.vertices = vertices;
+        mesh.triangles = triangles;
+        mesh.uv = uvs;
+        mesh.RecalculateNormals(); //重新计算法线，支持光照
+        mesh.RecalculateTangents(); //重新计算切线，支持法线贴图
+        // mesh.Optimize(); // Unity2020及以前版本可用
+
+        MeshFilter mf = GetComponent<MeshFilter>();
+        mf.mesh = mesh;
+
+        // 建议：确保MeshRenderer使用了支持光照的材质（如Standard材质）
+        // 可在Inspector中设置材质，或如下代码自动赋值：
+        // GetComponent<MeshRenderer>().material = new Material(Shader.Find("Standard"));
+    }
+
+    void Update()
+    {
+        // 可选：后续扩展
+    }
+}

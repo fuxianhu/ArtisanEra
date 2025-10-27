@@ -1,0 +1,53 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class PlayerMovement : MonoBehaviour
+{
+    public GameObject player; //需要有Rigidbody组件
+    public float moveForce =10f; // 移动推力
+    public float jumpForce =5f; // 跳跃推力
+
+    private Rigidbody rb;
+    private Vector3 inputDir;
+    private bool jumpPressed;
+    private bool sprinting;
+
+    void Start()
+    {
+        rb = player.GetComponent<Rigidbody>();
+    }
+
+    void Update()
+    {
+        //记录输入方向
+        inputDir = Vector3.zero;
+        if (Input.GetKey(KeyCode.W)) inputDir += Vector3.forward;
+        if (Input.GetKey(KeyCode.S)) inputDir += Vector3.back;
+        if (Input.GetKey(KeyCode.A)) inputDir += Vector3.left;
+        if (Input.GetKey(KeyCode.D)) inputDir += Vector3.right;
+        inputDir = inputDir.normalized;
+
+        // 跳跃
+        if (Input.GetKeyDown(KeyCode.Space))
+            jumpPressed = true;
+
+        // 冲刺
+        sprinting = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+    }
+
+    void FixedUpdate()
+    {
+        //施加移动力
+        float force = sprinting ? moveForce *1.5f : moveForce;
+        Vector3 worldDir = player.transform.TransformDirection(inputDir);
+        rb.AddForce(worldDir * force, ForceMode.Acceleration);
+
+        // 跳跃（简单实现，建议加地面检测）
+        if (jumpPressed)
+        {
+            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+            jumpPressed = false;
+        }
+    }
+}

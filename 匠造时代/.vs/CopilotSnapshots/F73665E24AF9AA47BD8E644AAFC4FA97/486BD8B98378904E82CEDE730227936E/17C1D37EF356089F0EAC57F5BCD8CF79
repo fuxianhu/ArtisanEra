@@ -1,0 +1,42 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+//using UnityEngine.UIElements;
+
+public class Main : MonoBehaviour
+{
+    // 在Inspector中将Button拖拽赋值给这个变量
+    public Button startGameButton;
+
+    void Start()
+    {
+        if (startGameButton != null)
+        {
+            startGameButton.onClick.AddListener(OnButtonClick);
+        }
+    }
+
+    void OnButtonClick()
+    {
+        // 删除所有UI组件（所有Canvas下的UI对象）
+        Canvas[] canvases = FindObjectsOfType<Canvas>();
+        foreach (Canvas canvas in canvases)
+        {
+            Destroy(canvas.gameObject);
+        }
+
+        RenderModeManager.instance.Show3DScene();
+        
+    }
+
+    
+    void OnDestroy()
+    {
+        // 重要！当对象被禁用或销毁时，最好移除监听，防止内存泄漏
+        if (startGameButton != null)
+        {
+            startGameButton.onClick.RemoveListener(OnButtonClick);
+        }
+    }
+}

@@ -1,0 +1,30 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class WorldGeneration : MonoBehaviour
+{
+
+    void Start()
+    {
+        FastNoiseLite noise = new FastNoiseLite();
+        noise.SetNoiseType(FastNoiseLite.NoiseType.OpenSimplex2);
+
+        float[,] noiseData = new float[128, 128];
+
+        for (int x = 0; x < 128; x++)
+        {
+            for (int y = 0; y < 128; y++)
+            {
+                noiseData[x, y] = noise.GetNoise(x, y);
+                Debug.Log($"Noise at ({x}, {y}): {noiseData[x, y]}");
+            }
+        }
+    }
+
+
+    void Update()
+    {
+        
+    }
+}

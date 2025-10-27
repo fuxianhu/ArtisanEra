@@ -1,0 +1,574 @@
+﻿using System.Collections.Generic;
+using System.IO;
+using System.Reflection;
+using UnityEditorInternal.Profiling.Wasm;
+using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
+
+
+[System.Serializable]
+public class SaveData
+{
+    public string saveName;
+    public string saveTime;
+    public int progressPercentage;
+    public string screenshotPath;
+}
+
+[System.Serializable]
+public class SaveDataList
+{
+    public List<SaveData> saves = new List<SaveData>();
+};
+
+
+public class HomeUI : MonoBehaviour
+{
+    public Canvas targetCanvas;
+    public Font fontToUse;
+    public Sprite buttonRoundedSprite; // 圆角Sprite，需在Inspector赋值
+
+    private DynamicSaveListUI dynamicSaveListUI;
+
+    private GameObject titleText, startButton, savasListText, quitButton, enterSaveButton, createSaveButton, editSaveButton;
+
+    private TMP_FontAsset tmpFontAsset; // 运行时创建的TMP字体资源
+
+    void Start()
+    {
+        // 如果提供了传统Font，尝试创建对应的TMP_FontAsset以供TextMeshPro使用
+        if (fontToUse != null)
+        {
+            tmpFontAsset = TMP_FontAsset.CreateFontAsset(fontToUse);
+        }
+
+        RenderHome();
+    }
+
+    public void ExitGame()
+    {
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
+#endif
+    }
+
+    public GameObject NewButton(Vector2 anchor, Vector2 buttonPosition, Vector2 size, string buttonName = "NewButton", string text = "Text", float scale = 2f)
+    {
+        GameObject btn = new GameObject(buttonName);
+        RectTransform buttonRect = btn.AddComponent<RectTransform>();
+        btn.transform.SetParent(targetCanvas.transform);
+        buttonRect.localScale = new Vector3(scale, scale, scale);
+        buttonRect.anchorMin = anchor;
+        buttonRect.anchorMax = anchor;
+        buttonRect.pivot = anchor;
+        buttonRect.anchoredPosition = buttonPosition;
+        buttonRect.sizeDelta = size;
+
+        Image buttonImage = btn.AddComponent<Image>();
+        if (buttonRoundedSprite != null)
+        {
+            buttonImage.sprite = buttonRoundedSprite;
+            buttonImage.type = Image.Type.Sliced; // 支持九宫格拉伸
+        }
+
+        Button buttonComponent = btn.AddComponent<Button>();
+
+        // 创建子Object作为按钮文本
+        GameObject textGO = new GameObject("Text");
+        RectTransform textRect = textGO.AddComponent<RectTransform>();
+        textGO.transform.SetParent(btn.transform);
+        textRect.localScale = Vector3.one;
+        textRect.anchorMin = Vector2.zero;
+        textRect.anchorMax = Vector2.one;
+        textRect.pivot = new Vector2(0.5f, 0.5f);
+        textRect.anchoredPosition = Vector2.zero;
+        textRect.sizeDelta = Vector2.zero;
+
+        // 为子Object添加TextMeshProUGUI组件并设置
+        TextMeshProUGUI textComponent = textGO.AddComponent<TextMeshProUGUI>();
+        textComponent.text = text;
+        textComponent.fontSize = 27;
+        textComponent.alignment = TextAlignmentOptions.Center;
+        textComponent.color = Color.white;
+        textComponent.enableWordWrapping = true;
+        if (tmpFontAsset != null)
+        {
+            textComponent.font = tmpFontAsset;
+            textComponent.fontStyle = FontStyles.Bold;
+        }
+
+        buttonComponent.targetGraphic = buttonImage;
+        return btn;
+    }
+
+
+    public GameObject NewText(Vector2 anchor, Vector2 position, string textName = "NewText", string textContent = "Text", int fontSize = 27)
+    {
+        // anchor为(0.5,0.5)则锚点在正中央
+        GameObject text = new GameObject(textName);
+        RectTransform rectTransform = text.AddComponent<RectTransform>();
+        TextMeshProUGUI textComponent = text.AddComponent<TextMeshProUGUI>();
+        text.transform.SetParent(targetCanvas.transform);
+        rectTransform.localScale = Vector3.one;
+        rectTransform.anchorMin = anchor;
+        rectTransform.anchorMax = anchor;
+        rectTransform.pivot = anchor;
+        rectTransform.anchoredPosition = position;
+        rectTransform.sizeDelta = new Vector2(1000, 1000); // 设置宽高
+        textComponent.text = textContent;
+        textComponent.fontSize = fontSize;
+        textComponent.alignment = TextAlignmentOptions.Top;
+        if (tmpFontAsset != null)
+        {
+            textComponent.font = tmpFontAsset;
+        }
+        return text;
+    }
+
+
+    void RenderHome()
+    {
+        // 渲染主页
+        if (titleText != null || startButton != null)
+        {
+            return;
+        }
+        titleText = NewText(new Vector2(0.5f, 1f), new Vector2(0, -30), "GameTitle", "匠造时代\r\nArtisanEra", 70);
+        // 通过TextMeshProUGUI组件设置颜色和字体样式
+        TextMeshProUGUI titleComp = titleText.GetComponent<TextMeshProUGUI>();
+        if (titleComp != null)
+        {
+            titleComp.color = Color.black;   // 设置字体颜色
+            titleComp.fontStyle = FontStyles.Bold; // 设置为粗体
+        }
+
+        startButton = NewButton(new Vector2(0.5f, 0.5f), new Vector2(0, 0), new Vector2(160, 50), "StartGameButton", "开始游戏", 2f);
+        Button buttonComponent = startButton.GetComponent<Button>();
+        buttonComponent.onClick.AddListener(OnStartGameButtonClicked);
+    }
+
+    void OnStartGameButtonClicked()
+    {
+        // 按下开始游戏按钮时的回调
+
+        Debug.Log("User click start game button.");
+        Destroy(titleText.gameObject);
+        Destroy(startButton.gameObject);
+        titleText = startButton = null;
+        RenderSavasList();
+    }
+
+    void RenderSavasList()
+    {
+        // 渲染存档列表界面
+
+        savasListText = NewText(new Vector2(0.5f, 1f), new Vector2(0, -30), "SavesListText", "存档列表", 40);
+        // 通过TextMeshProUGUI组件设置颜色和字体样式
+        TextMeshProUGUI textComp = savasListText.GetComponent<TextMeshProUGUI>();
+        if (textComp != null)
+        {
+            textComp.color = Color.black;   // 设置字体颜色
+            textComp.fontStyle = FontStyles.Bold; // 设置为粗体
+        }
+        quitButton = NewButton(new Vector2(0.5f, 0f), new Vector2(330, 20), new Vector2(160, 50), "QuitButton", "返回", 1f);
+        Button quitBtnComponent = quitButton.GetComponent<Button>();
+        quitBtnComponent.onClick.AddListener(OnQuitButtonClicked);
+
+        enterSaveButton = NewButton(new Vector2(0.5f, 0f), new Vector2(-70, 20), new Vector2(250, 50), "EnterSaveButton", "进入选中的存档", 1f);
+        Button enterSaveBtnComponent = enterSaveButton.GetComponent<Button>();
+        enterSaveBtnComponent.onClick.AddListener(OnEnterSaveButtonClicked);
+
+        createSaveButton = NewButton(new Vector2(0.5f, 0f), new Vector2(150, 20), new Vector2(160, 50), "CreateSaveButton", "创建存档", 1f);
+        Button createSaveBtnComponent = createSaveButton.GetComponent<Button>();
+        createSaveBtnComponent.onClick.AddListener(OnCreateSaveButtonClicked);
+
+        editSaveButton = NewButton(new Vector2(0.5f, 0f), new Vector2(-290, 20), new Vector2(160, 50), "EditSaveButton", "编辑存档", 1f);
+        Button editSaveBtnComponent = editSaveButton.GetComponent<Button>();
+        editSaveBtnComponent.onClick.AddListener(OnEditSaveButtonClicked);
+
+        enterSaveBtnComponent.interactable = false;
+        editSaveBtnComponent.interactable = false;
+
+        dynamicSaveListUI = targetCanvas.gameObject.AddComponent<DynamicSaveListUI>();
+        dynamicSaveListUI.canvas = targetCanvas; // 或 dynamicSaveListUI.externalCanvas = targetCanvas;
+        dynamicSaveListUI.tmpFontAsset = tmpFontAsset; // 将TMP字体传递给子组件
+        dynamicSaveListUI.CreateUI();
+    }
+
+    void DestorySavasList()
+    {
+        // 销毁存档列表界面
+        Destroy(savasListText.gameObject);
+        Destroy(quitButton.gameObject);
+        Destroy(enterSaveButton.gameObject);
+        Destroy(createSaveButton.gameObject);
+        Destroy(editSaveButton.gameObject);
+        savasListText = quitButton = enterSaveButton = createSaveButton = editSaveButton = null;
+    }
+
+    void OnQuitButtonClicked()
+    {
+        // 按下返回按钮时的回调
+        DestorySavasList();
+        RenderHome();
+    }
+
+    void OnEnterSaveButtonClicked()
+    {
+        // 按下进入选中的存档按钮时的回调
+        DestorySavasList();
+    }
+
+    void OnCreateSaveButtonClicked()
+    {
+        // 按下创建存档按钮时的回调
+        DestorySavasList();
+    }
+
+    void OnEditSaveButtonClicked()
+    {
+        // 按下编辑存档按钮时的回调
+        DestorySavasList();
+    }
+}
+
+
+public class DynamicSaveListUI : MonoBehaviour
+{
+    [Header("UI Settings")]
+    public int itemSpacing = 10;
+    public Vector2 scrollViewSize = new Vector2(600, 400);
+    public Vector2 itemSize = new Vector2(560, 100);
+    public Vector2 screenshotSize = new Vector2(80, 80);
+
+    [Header("Appearance")]
+    public Color backgroundColor = new Color(0.9f, 0.9f, 0.9f, 1f);
+    public Color itemColor = new Color(1f, 1f, 1f, 1f);
+    public Color selectedItemColor = new Color(0.8f, 0.9f, 1f, 1f);
+
+    public Canvas canvas;
+    public TMP_FontAsset tmpFontAsset; // 从HomeUI传入的字体
+    private GameObject scrollView;
+    private GameObject viewport;
+    private GameObject content;
+    private ScrollRect scrollRect;
+    private Dictionary<GameObject, SaveData> saveItemMap = new Dictionary<GameObject, SaveData>();
+    private GameObject selectedSaveItem;
+
+    public void CreateUI()
+    {
+        CreateScrollView();
+        CreateScrollViewComponents();
+        LoadAndDisplaySaves();
+    }
+
+    void CreateScrollView()
+    {
+        // 创建ScrollView主体
+        scrollView = new GameObject("ScrollView");
+        scrollView.transform.SetParent(canvas.transform);
+
+        // 设置RectTransform
+        RectTransform scrollViewRT = scrollView.AddComponent<RectTransform>();
+        scrollViewRT.sizeDelta = scrollViewSize;
+        scrollViewRT.anchorMin = new Vector2(0.5f, 0.5f);
+        scrollViewRT.anchorMax = new Vector2(0.5f, 0.5f);
+        scrollViewRT.pivot = new Vector2(0.5f, 0.5f);
+        scrollViewRT.anchoredPosition = Vector2.zero;
+
+        // 添加Image组件作为背景
+        Image scrollViewImage = scrollView.AddComponent<Image>();
+        scrollViewImage.color = backgroundColor;
+        scrollViewImage.type = Image.Type.Sliced;
+
+        // 添加ScrollRect组件
+        scrollRect = scrollView.AddComponent<ScrollRect>();
+        scrollRect.horizontal = false;
+        scrollRect.vertical = true;
+        scrollRect.movementType = ScrollRect.MovementType.Clamped;
+        scrollRect.decelerationRate = 0.135f;
+        scrollRect.scrollSensitivity = 25f;
+    }
+
+    void CreateScrollViewComponents()
+    {
+        // 创建Viewport
+        viewport = new GameObject("Viewport");
+        viewport.transform.SetParent(scrollView.transform);
+
+        RectTransform viewportRT = viewport.AddComponent<RectTransform>();
+        viewportRT.anchorMin = Vector2.zero;
+        viewportRT.anchorMax = Vector2.one;
+        viewportRT.sizeDelta = Vector2.zero;
+        viewportRT.pivot = Vector2.zero;
+        viewportRT.anchoredPosition = Vector2.zero;
+
+        // 添加Mask组件
+        Mask viewportMask = viewport.AddComponent<Mask>();
+        viewportMask.showMaskGraphic = false;
+        viewport.AddComponent<Image>();
+
+        // 创建Content
+        content = new GameObject("Content");
+        content.transform.SetParent(viewport.transform);
+
+        RectTransform contentRT = content.AddComponent<RectTransform>();
+        contentRT.anchorMin = new Vector2(0, 1);
+        contentRT.anchorMax = new Vector2(1, 1);
+        contentRT.pivot = new Vector2(0.5f, 1);
+        contentRT.sizeDelta = new Vector2(0, 0);
+        contentRT.anchoredPosition = Vector2.zero;
+
+        // 添加Vertical Layout Group
+        VerticalLayoutGroup layoutGroup = content.AddComponent<VerticalLayoutGroup>();
+        layoutGroup.padding = new RectOffset(20, 20, 20, 20);
+        layoutGroup.spacing = itemSpacing;
+        layoutGroup.childAlignment = TextAnchor.UpperCenter;
+        layoutGroup.childControlWidth = true;
+        layoutGroup.childControlHeight = false;
+        layoutGroup.childForceExpandWidth = true;
+        layoutGroup.childForceExpandHeight = false;
+
+        // 添加Content Size Fitter
+        ContentSizeFitter sizeFitter = content.AddComponent<ContentSizeFitter>();
+        sizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        sizeFitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+
+        // 连接ScrollRect组件
+        scrollRect.viewport = viewportRT;
+        scrollRect.content = contentRT;
+
+        // 创建Scrollbar
+        CreateScrollbar();
+    }
+
+    void CreateScrollbar()
+    {
+        // 创建垂直滚动条
+        GameObject scrollbar = new GameObject("Scrollbar");
+        scrollbar.transform.SetParent(scrollView.transform);
+
+        RectTransform scrollbarRT = scrollbar.AddComponent<RectTransform>();
+        scrollbarRT.anchorMin = new Vector2(1, 0);
+        scrollbarRT.anchorMax = new Vector2(1, 1);
+        scrollbarRT.pivot = new Vector2(1, 0.5f);
+        scrollbarRT.sizeDelta = new Vector2(20, 0);
+        scrollbarRT.anchoredPosition = Vector2.zero;
+
+        Scrollbar scrollbarComponent = scrollbar.AddComponent<Scrollbar>();
+        scrollbarComponent.direction = Scrollbar.Direction.BottomToTop;
+
+        // 创建滑动区域
+        GameObject slidingArea = new GameObject("Sliding Area");
+        slidingArea.transform.SetParent(scrollbar.transform);
+
+        RectTransform slidingAreaRT = slidingArea.AddComponent<RectTransform>();
+        slidingAreaRT.anchorMin = Vector2.zero;
+        slidingAreaRT.anchorMax = Vector2.one;
+        slidingAreaRT.sizeDelta = Vector2.zero;
+        slidingAreaRT.anchoredPosition = Vector2.zero;
+
+        // 创建手柄
+        GameObject handle = new GameObject("Handle");
+        handle.transform.SetParent(slidingArea.transform);
+
+        RectTransform handleRT = handle.AddComponent<RectTransform>();
+        handleRT.anchorMin = new Vector2(0, 0);
+        handleRT.anchorMax = new Vector2(1, 1);
+        handleRT.sizeDelta = new Vector2(-10, -10);
+        handleRT.anchoredPosition = Vector2.zero;
+
+        Image handleImage = handle.AddComponent<Image>();
+        handleImage.color = new Color(0.8f, 0.8f, 0.8f, 1f);
+        handleImage.type = Image.Type.Sliced;
+
+        // 设置滚动条
+        scrollbarComponent.targetGraphic = handleImage;
+        scrollbarComponent.handleRect = handleRT;
+
+        // 连接ScrollRect的滚动条
+        scrollRect.verticalScrollbar = scrollbarComponent;
+    }
+
+    void LoadAndDisplaySaves()
+    {
+        // 模拟加载存档数据 - 实际应用中应从文件读取
+        List<SaveData> saveDataList = LoadSaveData();
+
+        foreach (SaveData saveData in saveDataList)
+        {
+            CreateSaveItem(saveData);
+        }
+    }
+
+    List<SaveData> LoadSaveData()
+    {
+        // 这里应该是从磁盘加载存档数据的逻辑
+        // 以下是模拟数据
+        return new List<SaveData>
+        {
+            new SaveData { saveName = "存档点1", saveTime = "2023-10-01 12:30", progressPercentage = 25, screenshotPath = "ButtonImage.png" },
+            new SaveData { saveName = "自动存档", saveTime = "2023-10-01 13:45", progressPercentage = 50, screenshotPath = "ButtonImage.png" },
+            new SaveData { saveName = "最终Boss前", saveTime = "2023-10-02 15:20", progressPercentage = 90, screenshotPath = "ButtonImage.png" }
+        };
+    }
+
+    void CreateSaveItem(SaveData saveData)
+    {
+        // 创建存档项容器
+        GameObject saveItem = new GameObject("SaveItem");
+        saveItem.transform.SetParent(content.transform);
+
+        RectTransform itemRT = saveItem.AddComponent<RectTransform>();
+        itemRT.sizeDelta = itemSize;
+
+        // 添加背景Image
+        Image itemImage = saveItem.AddComponent<Image>();
+        itemImage.color = itemColor;
+        itemImage.type = Image.Type.Sliced;
+
+        // 添加Button组件用于点击交互
+        Button itemButton = saveItem.AddComponent<Button>();
+        itemButton.onClick.AddListener(() => OnSaveItemClicked(saveItem));
+
+        // 创建水平布局容器
+        GameObject horizontalLayout = new GameObject("HorizontalLayout");
+        horizontalLayout.transform.SetParent(saveItem.transform);
+
+        RectTransform layoutRT = horizontalLayout.AddComponent<RectTransform>();
+        layoutRT.anchorMin = Vector2.zero;
+        layoutRT.anchorMax = Vector2.one;
+        layoutRT.sizeDelta = new Vector2(-20, -20); // 内边距
+        layoutRT.anchoredPosition = Vector2.zero;
+
+        HorizontalLayoutGroup horizontalGroup = horizontalLayout.AddComponent<HorizontalLayoutGroup>();
+        horizontalGroup.padding = new RectOffset(10, 10, 10, 10);
+        horizontalGroup.spacing = 15;
+        horizontalGroup.childAlignment = TextAnchor.MiddleCenter;
+        horizontalGroup.childControlWidth = false;
+        horizontalGroup.childControlHeight = false;
+        horizontalGroup.childForceExpandWidth = false;
+        horizontalGroup.childForceExpandHeight = false;
+
+        ContentSizeFitter layoutFitter = horizontalLayout.AddComponent<ContentSizeFitter>();
+        layoutFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+        layoutFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        // 创建截图区域
+        CreateScreenshotArea(horizontalLayout, saveData);
+
+        // 创建文本信息区域
+        CreateTextInfoArea(horizontalLayout, saveData);
+
+        // 保存映射关系
+        saveItemMap.Add(saveItem, saveData);
+    }
+
+    void CreateScreenshotArea(GameObject parent, SaveData saveData)
+    {
+        // 创建截图容器
+        GameObject screenshotArea = new GameObject("Screenshot");
+        screenshotArea.transform.SetParent(parent.transform);
+
+        RectTransform screenshotRT = screenshotArea.AddComponent<RectTransform>();
+        screenshotRT.sizeDelta = screenshotSize;
+
+        // 添加Image组件显示截图
+        Image screenshotImage = screenshotArea.AddComponent<Image>();
+        screenshotImage.color = Color.gray; // 默认颜色
+
+        // 实际应用中应该从文件加载截图
+        // LoadScreenshot(saveData.screenshotPath, screenshotImage);
+    }
+
+    void CreateTextInfoArea(GameObject parent, SaveData saveData)
+    {
+        Debug.Log("CreateTextInfoArea Function!");
+        // 创建文本信息容器
+        GameObject textArea = new GameObject("TextInfo");
+        textArea.transform.SetParent(parent.transform);
+
+        RectTransform textRT = textArea.AddComponent<RectTransform>();
+        textRT.sizeDelta = new Vector2(400, 80);
+
+        VerticalLayoutGroup textLayout = textArea.AddComponent<VerticalLayoutGroup>();
+        textLayout.childAlignment = TextAnchor.MiddleLeft;
+        textLayout.childControlWidth = true;
+        textLayout.childControlHeight = true;
+        textLayout.childForceExpandWidth = true;
+        textLayout.childForceExpandHeight = true;
+
+        // 创建存档名称文本
+        CreateTextElement(textArea.transform, saveData.saveName, 24, FontStyles.Bold, TextAlignmentOptions.Left);
+
+        // 创建存档时间文本
+        CreateTextElement(textArea.transform, saveData.saveTime, 18, FontStyles.Normal, TextAlignmentOptions.Left);
+
+        // 创建进度文本
+        CreateTextElement(textArea.transform, $"进度: {saveData.progressPercentage}%", 16, FontStyles.Normal, TextAlignmentOptions.Left);
+    }
+
+    void CreateTextElement(Transform parent, string text, int fontSize, FontStyles fontStyle, TextAlignmentOptions alignment)
+    {
+        GameObject textGO = new GameObject("Text");
+        textGO.transform.SetParent(parent);
+
+        TextMeshProUGUI textComponent = textGO.AddComponent<TextMeshProUGUI>();
+        textComponent.text = text;
+        textComponent.fontSize = fontSize;
+        textComponent.fontStyle = fontStyle;
+        textComponent.alignment = alignment;
+        textComponent.color = Color.black;
+        textComponent.enableWordWrapping = true;
+        textComponent.overflowMode = TextOverflowModes.Truncate;
+
+        // 设置布局元素
+        LayoutElement layoutElement = textGO.AddComponent<LayoutElement>();
+        layoutElement.preferredHeight = fontSize + 4;
+
+        if (tmpFontAsset != null)
+        {
+            textComponent.font = tmpFontAsset;
+        }
+    }
+
+    void OnSaveItemClicked(GameObject saveItem)
+    {
+        // 取消之前选中的项
+        if (selectedSaveItem != null)
+        {
+            selectedSaveItem.GetComponent<Image>().color = itemColor;
+        }
+
+        // 设置当前选中的项
+        selectedSaveItem = saveItem;
+        saveItem.GetComponent<Image>().color = selectedItemColor;
+
+        // 获取对应的存档数据
+        if (saveItemMap.TryGetValue(saveItem, out SaveData saveData))
+        {
+            Debug.Log($"选中存档: {saveData.saveName}, 时间: {saveData.saveTime}");
+            // 这里可以触发加载存档的操作
+        }
+    }
+
+    // 动态添加新存档项的方法
+    public void AddNewSaveItem(SaveData newSaveData)
+    {
+        CreateSaveItem(newSaveData);
+    }
+
+    // 清除所有存档项的方法
+    public void ClearAllSaveItems()
+    {
+        foreach (Transform child in content.transform)
+        {
+            Destroy(child.gameObject);
+        }
+        saveItemMap.Clear();
+        selectedSaveItem = null;
+    }
+}

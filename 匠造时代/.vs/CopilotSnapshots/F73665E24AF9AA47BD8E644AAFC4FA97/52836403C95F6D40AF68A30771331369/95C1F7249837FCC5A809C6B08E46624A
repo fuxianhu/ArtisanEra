@@ -1,0 +1,93 @@
+﻿using UnityEngine;
+using UnityEngine.UI;
+
+public class UGUICreator : MonoBehaviour
+{
+    public Canvas targetCanvas;
+    public Font fontToUse;
+
+    void Start()
+    {
+        CreateCustomText();
+        CreateCustomButton();
+    }
+
+    void CreateCustomText()
+    {
+        GameObject textGO = new GameObject("GameTitle");
+        RectTransform rectTransform = textGO.AddComponent<RectTransform>();
+        Text textComponent = textGO.AddComponent<Text>();
+        textGO.transform.SetParent(targetCanvas.transform);
+        rectTransform.anchoredPosition = Vector2.up;
+        rectTransform.localScale = Vector3.one;
+        textComponent.text = "匠造时代\nArtisanEra";
+        textComponent.fontSize = 70;
+        textComponent.alignment = TextAnchor.MiddleCenter;
+        if (fontToUse != null)
+        {
+            textComponent.font = fontToUse; // 设置字体
+        }
+        textComponent.color = Color.black;   // 设置字体颜色
+        textComponent.fontStyle = FontStyle.Bold; // 设置为粗体
+        // FontStyle 可选: Normal, Bold, Italic, BoldAndItalic
+
+        // (可选) 设置其他RectTransform属性
+        rectTransform.sizeDelta = new Vector2(300, 200); // 设置宽高
+    }
+
+    void CreateCustomButton()
+    {
+        // 1. 创建主Button GameObject
+        GameObject buttonGO = new GameObject("StartGameButton");
+        RectTransform buttonRect = buttonGO.AddComponent<RectTransform>();
+        buttonGO.transform.SetParent(targetCanvas.transform);
+        buttonRect.anchoredPosition = new Vector2(0, -100); // 放在文本下方
+        buttonRect.localScale = Vector3.one;
+        buttonRect.sizeDelta = new Vector2(160, 30);
+
+        // 2. 添加Image组件 (用于显示按钮背景)
+        Image buttonImage = buttonGO.AddComponent<Image>();
+         buttonImage.color = Color.black;
+
+        // 3. 添加Button组件
+        Button buttonComponent = buttonGO.AddComponent<Button>();
+
+        // 4. 创建子Object作为按钮文本
+        GameObject textGO = new GameObject("Text");
+        RectTransform textRect = textGO.AddComponent<RectTransform>();
+        textGO.transform.SetParent(buttonGO.transform);
+        textRect.anchoredPosition = Vector2.zero;
+        textRect.sizeDelta = Vector2.zero; // 拉伸填充父节点
+        textRect.anchorMin = Vector2.zero;
+        textRect.anchorMax = Vector2.one;
+        textRect.offsetMin = Vector2.zero;
+        textRect.offsetMax = Vector2.zero;
+
+        // 5. 为子Object添加Text组件并设置
+        Text textComponent = textGO.AddComponent<Text>();
+        textComponent.text = "开始游戏";
+        textComponent.fontSize = 27;
+        textComponent.alignment = TextAnchor.MiddleCenter;
+        textComponent.color = Color.white; // 设置按钮文字颜色
+
+        if (fontToUse != null)
+        {
+            textComponent.font = fontToUse;
+            textComponent.fontStyle = FontStyle.Bold; // 按钮文字设为粗体
+        }
+
+        // 6. (重要!) 将Text组件赋值给Button的Target Graphic
+        // 这会影响按钮点击时文本的颜色变化（例如按下时变暗）
+        buttonComponent.targetGraphic = buttonImage; // 通常背景Image是目标
+                                                     // 如果你希望文字也变色，需要配置Button的过渡设置
+
+        buttonComponent.onClick.AddListener(OnButtonClicked);
+    }
+    
+
+    void OnButtonClicked()
+    {
+        Debug.Log("动态创建的按钮被点击了！");
+        // 这里可以添加点击后的逻辑
+    }
+}
