@@ -331,8 +331,8 @@ public class WorldGeneration : MonoBehaviour
                 vertices[idx] = new Vector3(x, value * s.heightScale, z);
                 uvs[idx] = new Vector2((float)x / chunkSize, (float)z / chunkSize);
 
-                bool IsGenerateTrees = false;
-                if (IsGenerateTrees && new System.Random().Next(1, 500) == 1 && vertices[idx].y >= -100 && vertices[idx].y <= 180)
+                bool IsGenerateTrees = true;
+                if (IsGenerateTrees && new System.Random().Next(1, 1000) == 1 && vertices[idx].y >= -100 && vertices[idx].y <= 180)
                 {
                     // 在此顶点位置生成一棵树
                     Vector3 treePos = new(worldX, vertices[idx].y, worldZ);

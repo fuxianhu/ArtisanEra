@@ -3,11 +3,11 @@
   "WorkspaceRootPath": "E:\\YFY\\ArtisanEra\\\u5320\u9020\u65F6\u4EE3\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{19D8EC66-D127-FC14-B477-DF1AC105041C}|Assembly-CSharp.csproj|E:\\YFY\\ArtisanEra\\\u5320\u9020\u65F6\u4EE3\\assets\\worldgeneration.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{19D8EC66-D127-FC14-B477-DF1AC105041C}|Assembly-CSharp.csproj|e:\\yfy\\artisanera\\\u5320\u9020\u65F6\u4EE3\\assets\\worldgeneration.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{19D8EC66-D127-FC14-B477-DF1AC105041C}|Assembly-CSharp.csproj|solutionrelative:assets\\worldgeneration.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{19D8EC66-D127-FC14-B477-DF1AC105041C}|Assembly-CSharp.csproj|e:\\yfy\\artisanera\\\u5320\u9020\u65F6\u4EE3\\assets\\proceduraltreegenerator.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{19D8EC66-D127-FC14-B477-DF1AC105041C}|Assembly-CSharp.csproj|E:\\YFY\\ArtisanEra\\\u5320\u9020\u65F6\u4EE3\\assets\\proceduraltreegenerator.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{19D8EC66-D127-FC14-B477-DF1AC105041C}|Assembly-CSharp.csproj|solutionrelative:assets\\proceduraltreegenerator.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
@@ -56,7 +56,7 @@
               "RelativeDocumentMoniker": "Assets\\ProceduralTreeGenerator.cs",
               "ToolTip": "E:\\YFY\\ArtisanEra\\\u5320\u9020\u65F6\u4EE3\\Assets\\ProceduralTreeGenerator.cs",
               "RelativeToolTip": "Assets\\ProceduralTreeGenerator.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAAAAAAAAAAAA==",
+              "ViewState": "AgIAADMAAAAAAAAAAAAYwD0AAAAFAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-10-25T06:45:12.812Z",
               "EditorCaption": ""
@@ -71,7 +71,8 @@
               "RelativeToolTip": "Assets\\FunctionManager.cs",
               "ViewState": "AgIAADcAAAAAAAAAAAAQwE4AAABgAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-10-22T12:56:51.807Z"
+              "WhenOpened": "2025-10-22T12:56:51.807Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
@@ -81,7 +82,7 @@
               "RelativeDocumentMoniker": "Assets\\WorldGeneration.cs",
               "ToolTip": "E:\\YFY\\ArtisanEra\\\u5320\u9020\u65F6\u4EE3\\Assets\\WorldGeneration.cs",
               "RelativeToolTip": "Assets\\WorldGeneration.cs",
-              "ViewState": "AgIAAEYAAAAAAAAAAAAAAE8AAAAJAAAAAAAAAA==",
+              "ViewState": "AgIAADgBAAAAAAAAAAAuwFwBAAANAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-10-21T12:27:11.445Z",
               "EditorCaption": ""
@@ -120,8 +121,7 @@
               "RelativeToolTip": "Assets\\saveData.json",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAACQAAAAIAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
-              "WhenOpened": "2025-09-14T06:17:00.523Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-09-14T06:17:00.523Z"
             },
             {
               "$type": "Document",
